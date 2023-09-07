@@ -57,14 +57,12 @@ async def five_min_ticker(count):
     last = five_min['timestamp'].iloc[-1]
     current_period_data = pd.DataFrame(trade_history[trade_history['timestamp'] >= last]).sort_values(by='timestamp')
 
-    current_ticker = pd.DataFrame(current_period_data.groupby(pd.Grouper(key='timestamp', freq='5min'))['price'].agg([('opening', 'first'), ('closing', 'last'),('high', 'max'),('low', 'min'), ('volume', 'sum')]))
-    current_ticker.reset_index(drop=False, inplace=True)
+    current_candle = pd.DataFrame(current_period_data.groupby(pd.Grouper(key='timestamp', freq='5min'))['price'].agg([('opening', 'first'), ('closing', 'last'),('high', 'max'),('low', 'min'), ('volume', 'sum')]))
+    current_candle.reset_index(drop=False, inplace=True)
     print(current_ticker)
 
     five_min = five_min[: -1]
-    five_min = pd.concat([five_min, current_ticker])
-
-  five_min['tick'] = range(0, len(five_min))
+    five_min = pd.concat([five_min, current_candle])
 
   five_min['timestamp'] = five_min['timestamp'].astype(str)
   five_min['json'] = five_min.to_json(orient='records', lines=True).splitlines()

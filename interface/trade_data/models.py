@@ -15,4 +15,3 @@ class Ticker(models.Model):
   high = models.CharField(max_length = 200)
   low = models.CharField(max_length = 200)
   volume = models.CharField(max_length = 200)
-  tick = models.CharField(max_length = 200, default="")
