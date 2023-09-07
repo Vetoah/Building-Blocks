@@ -8,6 +8,8 @@ import websockets
 import numpy as np
 import os.path
 import httpx 
+from django.urls import resolve
+from django.http import Http404
 
 from flask import Flask, request, jsonify, Response
 app = Flask(__name__)
@@ -37,20 +39,15 @@ async def getTrades():
           trades['quantity'] = trades['quantity'].astype(float)
           trades['price'] = trades['price'].astype(float) / 10000
           trades['timestamp'] = pd.to_datetime(trades['timestamp'], unit='ns')
-          # json_string = trades.to_json(orient='records')
-          # if (count > 2):
-          #   async with httpx.AsyncClient() as client:
-          #     response = await client.post('http://127.0.0.1:8000/addTrade', json=json.loads(json_string))
-                
           trade_history = pd.concat([trade_history, trades])
-          await five_min_ticker()
-          # print(trade_history)
-          
+          await five_min_ticker(count)
           count += 1
 
-async def five_min_ticker():
+async def five_min_ticker(count):
   global five_min
   global trade_history
+
+  cutoff = 0
 
   if(len(trade_history) == 1000):
     five_min = pd.DataFrame(trade_history.groupby(pd.Grouper(key='timestamp', freq='5min'))['price'].agg([('opening', 'first'), ('closing', 'last'),('high', 'max'),('low', 'min'), ('volume', 'sum')]))
@@ -62,18 +59,25 @@ async def five_min_ticker():
 
     current_ticker = pd.DataFrame(current_period_data.groupby(pd.Grouper(key='timestamp', freq='5min'))['price'].agg([('opening', 'first'), ('closing', 'last'),('high', 'max'),('low', 'min'), ('volume', 'sum')]))
     current_ticker.reset_index(drop=False, inplace=True)
+    print(current_ticker)
 
-    five_min.drop(five_min.tail(1).index, inplace=True)
-    five_min = pd.concat([five_min, current_ticker], axis=0).reset_index(drop=True)
+    five_min = five_min[: -1]
+    five_min = pd.concat([five_min, current_ticker])
+
+  five_min['tick'] = range(0, len(five_min))
 
   five_min['timestamp'] = five_min['timestamp'].astype(str)
   five_min['json'] = five_min.to_json(orient='records', lines=True).splitlines()
-  # json_data = five_min.to_json(orient='records')
-  for idx, data in enumerate(five_min['json']):
-    # print(json.loads(data))
+
+  if (count >= 1):
+    cutoff = -2
+    print('--------------------------------------------------')
+
+  for idx, data in enumerate(five_min['json'][cutoff:]):
     async with httpx.AsyncClient() as client:
-      response = await client.put(f'http://127.0.0.1:8000/api/ticker5/{idx}/', json=json.loads(data))
-  # print(five_min['json'])
+      response = await client.post(f'http://127.0.0.1:8000/api/ticker5/', json=json.loads(data))
+      if(response.status_code >= 300):
+        response = await client.put(f'http://127.0.0.1:8000/api/ticker5/{response.status_code - 300}/', json=json.loads(data))
 
 async def main():
   TRADING_PERIOD = 3 #10 * 60 / 5

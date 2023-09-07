@@ -1,4 +1,7 @@
 from django.shortcuts import render, HttpResponse
+from django.http import JsonResponse, HttpResponseRedirect
+from django.urls import reverse
+
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import generics
@@ -31,12 +34,18 @@ def addTrade(request):
 def delTrades(request):
   Trade.objects.all().delete
 
-@api_view(['PUT'])
+@api_view(['POST'])
 def create_ticker_5min(request, **kwargs):
-  serializer = TickerSerializer(data=request.data)
-  if serializer.is_valid():
-    serializer.save()
-  return Response(serializer.data)
+  val_check = request.data.get('timestamp')
+  obj = Ticker.objects.filter(timestamp=val_check)
+  if obj:
+    print('redirect')
+    return JsonResponse({'message': 'Object created successfully'}, status=300 + obj.first().id)
+  else: 
+    serializer = TickerSerializer(data=request.data)
+    if serializer.is_valid():
+      serializer.save()
+    return Response(serializer.data)
 
 class Ticker_5min(generics.UpdateAPIView):
   queryset = Ticker.objects.all()
