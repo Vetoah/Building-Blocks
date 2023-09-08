@@ -7,7 +7,7 @@ function getDisplayName(ChartComponent) {
 }
 
 export default function updatingDataWrapper(ChartComponent) {
-	const LENGTH = 130;
+	const LENGTH = 100;
 
 	class UpdatingComponentHOC extends React.Component {
 		constructor(props) {
@@ -42,8 +42,7 @@ export default function updatingDataWrapper(ChartComponent) {
 				};
 				break;
 			}
-			case 80:
-					// P (80)
+
 			case 49: {
 					// 1 (49) - Start Push data
 				this.func = () => {
@@ -52,6 +51,7 @@ export default function updatingDataWrapper(ChartComponent) {
 							length: this.state.length + 1,
 							data: this.props.data.slice(0, this.state.length + 1),
 						});
+						
 					}
 				};
 				break;
@@ -81,6 +81,7 @@ export default function updatingDataWrapper(ChartComponent) {
 			if (this.func) {
 				if (this.interval) clearInterval(this.interval);
 				console.log("this.speed  = ", this.speed);
+				console.log(this.state.length)
 				this.interval = setInterval(this.func, this.speed);
 			}
 		}

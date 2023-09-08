@@ -10,7 +10,7 @@ class TradeSerializer(serializers.ModelSerializer):
 class TickerSerializer(serializers.ModelSerializer):
   class Meta:
     model = Ticker
-    fields = ['timestamp', 'opening', 'closing', 'high', 'low', 'volume']
+    fields = ['timestamp', 'opening', 'high', 'low', 'closing', 'volume']
 
   # def update(self, instance, validated_data):
   #   instance_meta = instance.meta.copy()

@@ -85,7 +85,7 @@ class CandleStickChartWithMACDIndicator extends React.Component {
 
 		const calculatedData = smaVolume50(macdCalculator(ema12(ema26(initialData))));
 		const xScaleProvider = discontinuousTimeScaleProvider
-			.inputDateAccessor(d => d.date);
+			.inputDateAccessor(d => d.timestamp);
 		const {
 			data,
 			xScale,

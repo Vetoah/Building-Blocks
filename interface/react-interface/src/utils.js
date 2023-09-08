@@ -1,37 +1,28 @@
 
 
-import { tsvParse, csvParse } from  "d3-dsv";
 import { timeParse } from "d3-time-format";
 
-function parseData(parse) {
-	return function(d) {
-		d.date = parse(d.date);
-		d.open = +d.open;
-		d.high = +d.high;
-		d.low = +d.low;
-		d.close = +d.close;
-		d.volume = +d.volume;
 
-		return d;
-	};
+function parseData(data) {
+  const parseDate = timeParse("%Y-%m-%d %H:%M:%S");
+
+  return data.map(d => {
+    return {
+      timestamp: parseDate(d.timestamp), 
+      open: parseInt(d.opening), 
+      high: parseInt(d.high), 
+      low: parseInt(d.low), 
+			close: parseInt(d.closing), 
+      volume: parseFloat(d.volume) 
+    };
+  })
 }
 
-const parseDate = timeParse("%Y-%m-%d");
 
 export function getData() {
-	const promiseMSFT = fetch("https://cdn.rawgit.com/rrag/react-stockcharts/master/docs/data/MSFT.tsv")
+	const json_fetch = fetch("http://127.0.0.1:8000/trades")
 		.then(response => response.text())
-		.then(data => tsvParse(data, parseData(parseDate)))
-	return promiseMSFT;
+		.then(data => parseData(JSON.parse(data)))
+	return json_fetch;
 }
 
-
-// export function getData() {
-// 	const data = 'hello'
-
-// 	return (
-//     <div style={{height:'100px', width:'100px', backgroundColor:'red', position:'absolute'}}>
-//       hello
-//     </div>
-//   );
-// }

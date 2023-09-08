@@ -25,10 +25,7 @@ class ChartComponent extends React.Component {
 
 function App() {
   return (
-    <Suspense fallback={null}>
-      <ChartComponent />
-
-    </Suspense>
+    <ChartComponent />
   );
 }
 

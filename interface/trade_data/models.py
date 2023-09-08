@@ -11,7 +11,7 @@ class Trade(models.Model):
 class Ticker(models.Model):
   timestamp = models.CharField(max_length = 200)
   opening = models.CharField(max_length = 200)
-  closing = models.CharField(max_length = 200)
   high = models.CharField(max_length = 200)
   low = models.CharField(max_length = 200)
+  closing = models.CharField(max_length = 200)
   volume = models.CharField(max_length = 200)
