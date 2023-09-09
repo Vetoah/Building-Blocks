@@ -20,7 +20,7 @@ five_min = pd.DataFrame()
 async def getTrades():
   global trade_history
   uri  = "wss://phemex.com/ws"
-
+  
   async with websockets.connect(uri) as websocket:
       await websocket.send(json.dumps({
           "id": 1234,
@@ -31,7 +31,7 @@ async def getTrades():
       }))
 
       count = 0
-      while (count < 100):
+      while (count < 3):
         msg = await websocket.recv()
         data = json.loads(msg)
         if 'trades' in data:
@@ -41,6 +41,7 @@ async def getTrades():
           trades['timestamp'] = pd.to_datetime(trades['timestamp'], unit='ns')
           trade_history = pd.concat([trade_history, trades])
           await five_min_ticker(count)
+          
           count += 1
 
 async def five_min_ticker(count):
@@ -48,7 +49,9 @@ async def five_min_ticker(count):
   global trade_history
 
   cutoff = 0
+  local_ws = "ws://localhost:8000/ws/socket-server/"
 
+  # async with websockets.connect(local_ws) as ping:
   if(len(trade_history) == 1000):
     five_min = pd.DataFrame(trade_history.groupby(pd.Grouper(key='timestamp', freq='5min'))['price'].agg([('opening', 'first'),('high', 'max'),('low', 'min'), ('closing', 'last'), ('volume', 'sum')]))
     five_min.reset_index(drop=False, inplace=True)
@@ -76,12 +79,15 @@ async def five_min_ticker(count):
       response = await client.post(f'http://127.0.0.1:8000/api/ticker5/', json=json.loads(data))
       if(response.status_code >= 300):
         response = await client.put(f'http://127.0.0.1:8000/api/ticker5/{response.status_code - 300}/', json=json.loads(data))
-
+  # ping.send(json.dumps ({
+  #   'type': 'ping',
+  #   'message' : 'hola motha trucka'
+  # }))
 async def main():
-  TRADING_PERIOD = 3 #10 * 60 / 5
-
-  retrieval = asyncio.create_task(getTrades())
-  await retrieval
+  return
+  # async with websockets.connect("ws://localhost:8000/wserver")) as ping:
+  #   ping.onmessage = (data) 
+  # await retrieval
 
 if __name__=="__main__":
   # queue = asyncio.Queue()

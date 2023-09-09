@@ -31,6 +31,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'uvicorn',
     'rest_framework',
     'django.contrib.admin',
@@ -40,8 +41,17 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'trade_data',
-    'corsheaders'
+    'corsheaders',
+
 ]
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer'
+    }
+}
+
+ASGI_APPLICATION = 'interface.asgi.application'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

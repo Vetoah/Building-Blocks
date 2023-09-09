@@ -10,7 +10,26 @@ https://docs.djangoproject.com/en/4.2/howto/deployment/asgi/
 import os
 
 from django.core.asgi import get_asgi_application
+from channels.routing import ProtocolTypeRouter, URLRouter
+from channels.auth import AuthMiddlewareStack
+import trade_data.routing
+# from trade_data.consumers import TickerConsumer
+# from django.urls import path
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'interface.settings')
 
-application = get_asgi_application()
+application = ProtocolTypeRouter({
+  'http' :get_asgi_application(),
+  'websocket' :AuthMiddlewareStack(
+    URLRouter(
+      trade_data.routing.websocket_urlpatterns
+    )
+  )
+})
+
+# application = ProtocolTypeRouter({
+#   'http' :get_asgi_application(),
+#   'websocket' : URLRouter([
+#       path('wserver', TickerConsumer.as_asgi())
+#     ])
+# })

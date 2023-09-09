@@ -50,6 +50,9 @@ def create_ticker_5min(request, **kwargs):
 class Ticker_5min(generics.UpdateAPIView):
   queryset = Ticker.objects.all()
   serializer_class = TickerSerializer
+
+def connection(request):
+  return render(request, 'trade_data/lobby.html')
  
 
 

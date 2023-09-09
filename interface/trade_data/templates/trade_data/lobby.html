@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset='utf-8'>
+  <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+  <title>Page Title</title>
+  <meta name='viewport' content='width=device-width, initial-scale=1'>
+</head>
+
+<body>
+  <h1> CONNECTION </h1>
+  <form id="form">
+    <input type="text" name="message"/>
+  </form>
+  <div id="messages"></div>
+  <script type="text/javascript">
+    let url = `ws://${window.location.host}/ws/socket-server/`
+    console.log('uh: ' + url)
+    const tickerSocket = new WebSocket(url)
+
+    tickerSocket.onmessage = function(e) {
+      let data = JSON.parse(e.data)
+      console.log('Data: ', data)
+
+      if(data.type === 'ping'){
+        console.log('true')
+        let messages = document.getElementById('messages')
+
+        messages.insertAdjacentHTML('beforeend', `<div>
+          <p>${data.message}</p>
+        </div>`)
+      }
+    }
+
+    let form = document.getElementById('form')
+    form.addEventListener('submit', (e)=> {
+      e.preventDefault()
+      let message = e.target.message.value
+      tickerSocket.send(JSON.stringify({
+        'message': message
+      }))
+      form.reset()
+    })
+  </script>
+</body>
+</html>

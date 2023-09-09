@@ -1,16 +1,30 @@
 import './App.css';
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import Chart from './Chart';
 import { getData } from "./utils"
 
 import { TypeChooser } from "react-stockcharts/lib/helper";
 
 class ChartComponent extends React.Component {
+	
 	componentDidMount() {
 		getData().then(data => {
-			this.setState({ data })
+			if (this.state === null)
+				this.setState({ data })
+			else {
+				if (this.state.data !== data) {
+					this.setState({ data })
+					console.log('new data')
+					console.log(data)
+				}
+			}
+
 		})
 	}
+
+	componentWillUnmount() {
+		clearInterval(this.interval);
+  }
 	render() {
 		if (this.state == null) {
 			return <div>Loading...</div>
@@ -24,9 +38,20 @@ class ChartComponent extends React.Component {
 }
 
 function App() {
-  return (
-    <ChartComponent />
-  );
+	const ws = new WebSocket("ws://localhost:8000/ws/socket-server/");
+	
+	useEffect(() => {
+		ws.onmessage = function(e) {
+			let data = JSON.parse(e.data)
+			console.log('Data: ', data)
+		}
+		
+	})
+	return (
+		<>
+			<ChartComponent />
+		</>
+	);
 }
 
 export default App;

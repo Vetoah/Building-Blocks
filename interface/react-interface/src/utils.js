@@ -8,7 +8,7 @@ function parseData(data) {
 
   return data.map(d => {
     return {
-      timestamp: parseDate(d.timestamp), 
+      date: parseDate(d.timestamp), 
       open: parseInt(d.opening), 
       high: parseInt(d.high), 
       low: parseInt(d.low), 

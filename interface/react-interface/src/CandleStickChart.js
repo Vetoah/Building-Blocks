@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import PropTypes from "prop-types";
 
 import { format } from "d3-format";
@@ -85,7 +85,7 @@ class CandleStickChartWithMACDIndicator extends React.Component {
 
 		const calculatedData = smaVolume50(macdCalculator(ema12(ema26(initialData))));
 		const xScaleProvider = discontinuousTimeScaleProvider
-			.inputDateAccessor(d => d.timestamp);
+			.inputDateAccessor(d => d.date);
 		const {
 			data,
 			xScale,
@@ -93,12 +93,16 @@ class CandleStickChartWithMACDIndicator extends React.Component {
 			displayXAccessor,
 		} = xScaleProvider(calculatedData);
 
+		// console.log(d => d.timestamp)
+
+		
+
 		return (
-			<ChartCanvas height={600}
+			<ChartCanvas height={window.innerHeight * .95}
 				width={width}
 				ratio={ratio}
 				margin={{ left: 70, right: 70, top: 20, bottom: 30 }}
-				type={type}
+				// type={type}
 				seriesName="MSFT"
 				data={data}
 				xScale={xScale}
@@ -119,6 +123,12 @@ class CandleStickChartWithMACDIndicator extends React.Component {
 						{...mouseEdgeAppearance}
 					/>
 
+					<MouseCoordinateX
+						rectWidth={60}
+						at="bottom"
+						orient="bottom"
+						displayFormat={timeFormat("%Y-%m-%d %H:%M:%S")} />
+
 					<CandlestickSeries />
 					<LineSeries yAccessor={ema26.accessor()} stroke={ema26.stroke()}/>
 					<LineSeries yAccessor={ema12.accessor()} stroke={ema12.stroke()}/>
@@ -135,8 +145,8 @@ class CandleStickChartWithMACDIndicator extends React.Component {
 						strokeWidth={3}
 						arrowWidth={2}
 					/>
-
-					<OHLCTooltip origin={[-40, 0]}/>
+timeParse("%Y-%m-%d %H:%M:%S")
+					<OHLCTooltip origin={[-40, 0]} xDisplayFormat={timeFormat("%Y-%m-%d %H:%M:%S")}/>
 					<MovingAverageTooltip
 						onClick={e => console.log(e)}
 						origin={[-38, 15]}
@@ -172,7 +182,7 @@ class CandleStickChartWithMACDIndicator extends React.Component {
 					<BarSeries yAccessor={d => d.volume} fill={d => d.close > d.open ? "#6BA583" : "#FF0000"} />
 					<AreaSeries yAccessor={smaVolume50.accessor()} stroke={smaVolume50.stroke()} fill={smaVolume50.fill()}/>
 				</Chart>
-				<Chart id={3} height={150}
+				{/* <Chart id={3} height={150}
 					yExtents={macdCalculator.accessor()}
 					origin={(w, h) => [0, h - 150]} padding={{ top: 10, bottom: 10 }}
 				>
@@ -201,7 +211,7 @@ class CandleStickChartWithMACDIndicator extends React.Component {
 						options={macdCalculator.options()}
 						appearance={macdAppearance}
 					/>
-				</Chart>
+				</Chart> */}
 				<CrossHairCursor />
 			</ChartCanvas>
 		);
@@ -216,7 +226,7 @@ CandleStickChartWithMACDIndicator.propTypes = {
 };
 
 CandleStickChartWithMACDIndicator.defaultProps = {
-	type: "svg",
+	type: "hybrid",
 };
 
 CandleStickChartWithMACDIndicator = fitWidth(CandleStickChartWithMACDIndicator);

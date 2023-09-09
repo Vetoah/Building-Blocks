@@ -81,7 +81,7 @@ export default function updatingDataWrapper(ChartComponent) {
 			if (this.func) {
 				if (this.interval) clearInterval(this.interval);
 				console.log("this.speed  = ", this.speed);
-				console.log(this.state.length)
+				// console.log(this.state.length)
 				this.interval = setInterval(this.func, this.speed);
 			}
 		}
