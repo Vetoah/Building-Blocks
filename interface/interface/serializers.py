@@ -1,15 +1,15 @@
 from rest_framework import serializers
-from trade_data.models import Trade, Ticker
+from trade_data.models import TickerModel, TradeModel
 
 class TradeSerializer(serializers.ModelSerializer):
   class Meta:
-    model = Trade
+    model = TradeModel
     fields = '__all__'
 
 
 class TickerSerializer(serializers.ModelSerializer):
   class Meta:
-    model = Ticker
+    model = TickerModel
     fields = ['timestamp', 'opening', 'high', 'low', 'closing', 'volume']
 
   # def update(self, instance, validated_data):

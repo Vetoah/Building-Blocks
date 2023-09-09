@@ -10,12 +10,25 @@ import os.path
 import httpx 
 from django.urls import resolve
 from django.http import Http404
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 from flask import Flask, request, jsonify, Response
 app = Flask(__name__)
 
 trade_history = pd.DataFrame(columns=['timestamp', 'side', 'price', 'quantity'])
 five_min = pd.DataFrame()
+
+async def sendData():
+  channel_layer = get_channel_layer()
+  group_name = "lobby"
+  await (channel_layer.group_send)(
+    group_name,
+    {
+      'type': 'ping_message',
+      'message': "SENDIN MESSAGE!!!!!!!!!!"
+    }
+  )
 
 async def getTrades():
   global trade_history
@@ -31,7 +44,7 @@ async def getTrades():
       }))
 
       count = 0
-      while (count < 10):
+      while (count < 50):
         msg = await websocket.recv()
         data = json.loads(msg)
         if 'trades' in data:
@@ -67,11 +80,12 @@ async def five_min_ticker(count):
     five_min = five_min[: -1]
     five_min = pd.concat([five_min, current_candle])
 
-  five_min['timestamp'] = five_min['timestamp'].astype(str)
+  # five_min['timestamp'] = five_min['timestamp'].astype(str)
+  # await sendData()
   five_min['json'] = five_min.to_json(orient='records', lines=True).splitlines()
 
   if (count >= 1):
-    cutoff = -2
+    cutoff = -1
     print('--------------------------------------------------')
 
   for idx, data in enumerate(five_min['json'][cutoff:]):

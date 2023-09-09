@@ -4,11 +4,11 @@ import { timeParse } from "d3-time-format";
 
 
 function parseData(data) {
-  const parseDate = timeParse("%Y-%m-%d %H:%M:%S");
+  // const parseDate = timeParse("%Y-%m-%d %H:%M:%S");
 
   return data.map(d => {
     return {
-      date: parseDate(d.timestamp), 
+      date: parseInt(d.timestamp), 
       open: parseInt(d.opening), 
       high: parseInt(d.high), 
       low: parseInt(d.low), 
@@ -20,9 +20,27 @@ function parseData(data) {
 
 
 export function getData() {
-	const json_fetch = fetch("http://127.0.0.1:8000/trades")
-		.then(response => response.text())
-		.then(data => parseData(JSON.parse(data)))
-	return json_fetch;
+	return fetch("http://127.0.0.1:8000/trades")
+		.then(response => {
+      return response.json()
+    })
+		.then(data => {
+      return data.map(obj => Object.values(obj).map(value => parseFloat(value)));
+    })
+	// return json_fetch;
 }
+
+
+export function getData2() {
+	// const json_fetch = fetch("http://127.0.0.1:8000/trades")
+	return fetch("https://demo-live-data.highcharts.com/aapl-ohlc.json")
+		.then(response => {
+      return response.json()
+    })
+		.then(data => {
+      return data;
+    })
+}
+
+
 

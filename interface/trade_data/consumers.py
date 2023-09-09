@@ -24,16 +24,32 @@ class TickerConsumer(WebsocketConsumer):
     async_to_sync(self.channel_layer.group_send)(
       self.group_name,
       {
-        'type': 'ping_message',
+        'type': 'new_candle',
+        'message': message
+      }
+    )
+
+    async_to_sync(self.channel_layer.group_send)(
+      self.group_name,
+      {
+        'type': 'update_candle',
         'message': message
       }
     )
 
   
-  def ping_message(self, event):
+  def new_candle(self, event):
     message = event['message']
 
     self.send(text_data = json.dumps({
-      'type': 'ping',
+      'type': 'new',
+      'message' : message
+    }))
+
+  def update_candle(self, event):
+    message = event['message']
+
+    self.send(text_data = json.dumps({
+      'type': 'update',
       'message' : message
     }))

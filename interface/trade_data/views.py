@@ -6,20 +6,20 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import generics
 from .simple_emacross import getTrades
-from .models import Trade, Ticker
+from .models import TradeModel, TickerModel
 from interface.serializers import TradeSerializer, TickerSerializer
 import asyncio
 # Create your views here.
 @api_view(['GET'])
 def home(request):
   asyncio.run(getTrades())
-  tickers = Ticker.objects.all()
+  tickers = TickerModel.objects.all()
   serializer = TickerSerializer(tickers, many=True)
   return Response(serializer.data)
 
 @api_view(['GET'])
 def trades(request):
-  tickers = Ticker.objects.all()
+  tickers = TickerModel.objects.all()
   serializer = TickerSerializer(tickers, many=True)
   return Response(serializer.data)
 
@@ -37,7 +37,7 @@ def delTrades(request):
 @api_view(['POST'])
 def create_ticker_5min(request, **kwargs):
   val_check = request.data.get('timestamp')
-  obj = Ticker.objects.filter(timestamp=val_check)
+  obj = TickerModel.objects.filter(timestamp=val_check)
   if obj:
     print('redirect')
     return JsonResponse({'message': 'Object created successfully'}, status=300 + obj.first().id)
@@ -48,7 +48,7 @@ def create_ticker_5min(request, **kwargs):
     return Response(serializer.data)
 
 class Ticker_5min(generics.UpdateAPIView):
-  queryset = Ticker.objects.all()
+  queryset = TickerModel.objects.all()
   serializer_class = TickerSerializer
 
 def connection(request):
