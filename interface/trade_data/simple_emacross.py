@@ -31,7 +31,7 @@ async def getTrades():
       }))
 
       count = 0
-      while (count < 3):
+      while (count < 10):
         msg = await websocket.recv()
         data = json.loads(msg)
         if 'trades' in data:

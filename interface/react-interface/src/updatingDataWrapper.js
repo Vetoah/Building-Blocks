@@ -13,12 +13,29 @@ export default function updatingDataWrapper(ChartComponent) {
 		constructor(props) {
 			super(props);
 			this.state = {
-				length: LENGTH,
-				data: this.props.data.slice(0, LENGTH),
+				length: this.props.data.length,
+				data: this.props.data.slice(0, this.props.data.length),
 			};
 			this.speed = 1000;
 			this.onKeyPress = this.onKeyPress.bind(this);
 		}
+		componentDidUpdate(prevProps) {
+			if(this.props.data !== prevProps.data) {
+				console.log('DIFF!')
+				console.log(this.state.length)
+				this.func = () => {
+					if (this.state.length < this.props.data.length) {
+						
+						this.setState({
+							length: this.state.length + 1,
+							data: this.props.data.slice(0, this.state.length + 1),
+						});
+					}
+				};
+			}
+		}
+
+
 		componentDidMount() {
 			document.addEventListener("keyup", this.onKeyPress);
 		}
@@ -30,53 +47,52 @@ export default function updatingDataWrapper(ChartComponent) {
 			const keyCode = e.which;
 			console.log(keyCode);
 			switch (keyCode) {
-			case 50: {
+				case 50: {
 					// 2 (50) - Start alter data
-				this.func = () => {
-					if (this.state.length < this.props.data.length) {
-						this.setState({
-							length: this.state.length + 1,
-							data: this.props.data.slice(0, this.state.length + 1),
-						});
-					}
-				};
-				break;
-			}
+					this.func = () => {
+						if (this.state.length < this.props.data.length) {
+							this.setState({
+								length: this.state.length + 1,
+								data: this.props.data.slice(0, this.state.length + 1),
+							});
+						}
+					};
+					break;
+				}
 
-			case 49: {
+				case 49: {
 					// 1 (49) - Start Push data
-				this.func = () => {
-					if (this.state.length < this.props.data.length) {
-						this.setState({
-							length: this.state.length + 1,
-							data: this.props.data.slice(0, this.state.length + 1),
-						});
-						
-					}
-				};
-				break;
-			}
-			case 27: {
+					this.func = () => {
+						if (this.state.length < this.props.data.length) {
+							this.setState({
+								length: this.state.length + 1,
+								data: this.props.data.slice(0, this.state.length + 1),
+							});
+						}
+					};
+					break;
+				}
+				case 27: {
 					// ESC (27) - Clear interval
-				this.func = null;
-				if (this.interval) clearInterval(this.interval);
-				break;
-			}
-			case 107: {
+					this.func = null;
+					if (this.interval) clearInterval(this.interval);
+					break;
+				}
+				case 107: {
 					// + (107) - increase the this.speed
-				this.speed = Math.max(this.speed / 2, 50);
-				break;
-			}
-			case 109:
-			case 189: {
+					this.speed = Math.max(this.speed / 2, 50);
+					break;
+				}
+				case 109:
+				case 189: {
 					// - (189, 109) - reduce the this.speed
-				const delta = Math.min(this.speed, 1000);
-				this.speed = this.speed + delta;
-				break;
-			}
-      default: {
-        break;
-      }
+					const delta = Math.min(this.speed, 1000);
+					this.speed = this.speed + delta;
+					break;
+				}
+				default: {
+					break;
+				}
 			}
 			if (this.func) {
 				if (this.interval) clearInterval(this.interval);
@@ -93,9 +109,9 @@ export default function updatingDataWrapper(ChartComponent) {
 		}
 	}
 	UpdatingComponentHOC.defaultProps = {
-		type: "svg",
+		type: "hybrid",
 	};
-	UpdatingComponentHOC.displayName = `updatingDataWrapper(${ getDisplayName(ChartComponent) })`;
+	UpdatingComponentHOC.displayName = `updatingDataWrapper(${getDisplayName(ChartComponent)})`;
 
 	return UpdatingComponentHOC;
 }

@@ -44,8 +44,8 @@ function App() {
 		ws.onmessage = function(e) {
 			let data = JSON.parse(e.data)
 			console.log('Data: ', data)
+			console.log('type: ', data.type)
 		}
-		
 	})
 	return (
 		<>
