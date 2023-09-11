@@ -5,17 +5,17 @@ from django.urls import reverse
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import generics
-from .simple_emacross import getTrades
+# from .util import getTrades
 from .models import TradeModel, TickerModel
 from interface.serializers import TradeSerializer, TickerSerializer
 import asyncio
 # Create your views here.
-@api_view(['GET'])
-def home(request):
-  asyncio.run(getTrades())
-  tickers = TickerModel.objects.all()
-  serializer = TickerSerializer(tickers, many=True)
-  return Response(serializer.data)
+# @api_view(['GET'])
+# def home(request):
+#   asyncio.run(getTrades())
+#   tickers = TickerModel.objects.all()
+#   serializer = TickerSerializer(tickers, many=True)
+#   return JsonResponse({'message': 'loading'})
 
 @api_view(['GET'])
 def trades(request):

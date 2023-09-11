@@ -8,71 +8,35 @@ import { getData } from "./utils"
 
 import Highcharts from 'highcharts'
 import HighchartsReact from 'highcharts-react-official'
+require('highcharts/modules/stock')(Highcharts);
 
-// class ChartComponent extends React.Component {
 
-// 	componentDidMount() {
-// 		getData().then(data => {
-// 			if (this.state === null)
-// 				this.setState({ data })
-// 			else {
-// 				if (this.state.data !== data) {
-// 					this.setState({ data })
-// 					console.log('new data')
-// 					console.log(data)
-// 				}
-// 			}
 
-// 		})
-// 	}
-
-// 	componentWillUnmount() {
-// 		clearInterval(this.interval);
-//   }
-// 	render() {
-// 		if (this.state == null) {
-// 			return <div>Loading...</div>
-// 		}
-// 		return (
-// 			<TypeChooser>
-// 				{type => <Chart type={type} data={this.state.data} />}
-// 			</TypeChooser>
-// 		)
-// 	}
-// }
 
 function CandleChart({ ws }) {
-
-	const [data, setData] = useState(null);
-
 	const [options, setOptions] = useState({
 		chart: {
-			type: 'candlestick',
 			backgroundColor: 'transparent',
-	
 			zooming: {
 				mouseWheel: true
 			},
-			style: {
-				// position:'absolute',
-			}
 		},
 		rangeSelector: {
 			buttons: [{
-					count: 1,
-					type: 'minute',
-					text: '1M'
+				count: 1,
+				type: 'minute',
+				text: '1M'
 			}, {
-					count: 5,
-					type: 'minute',
-					text: '5M'
+				count: 5,
+				type: 'minute',
+				text: '5M'
 			}, {
-					type: 'all',
-					text: 'All'
+				type: 'all',
+				text: 'All'
 			}],
 			inputEnabled: true,
 			selected: 0
-	},
+		},
 		title: {
 			text: 'BTC Price Data',
 			style: {
@@ -81,7 +45,7 @@ function CandleChart({ ws }) {
 		},
 		navigator: {
 			enabled: false,
-			color:'purple',
+			color: 'purple',
 		},
 
 		scrollbar: {
@@ -91,105 +55,180 @@ function CandleChart({ ws }) {
 			gridLineWidth: 1,
 			gridLineColor: '#292B2E',
 			tickPixelInterval: 50,
-			minTickPixelInterval: 50
+			minTickPixelInterval: 50,
+
 		},
 
-		yAxis: {
+		yAxis: [{
+			labels: {
+				align: "right",
+				x: -3
+			},
+			title: {
+				text: "OHLC"
+			},
+			height: "60%",
 			gridLineWidth: 1,
-			gridLineColor: '#292B2E'
+			gridLineColor: '#292B2E',
+			resize: {
+				enabled: true
+			}
+		}, {
+			labels: {
+				align: "right",
+				x: -3
+			},
+			title: {
+				text: "Volume"
+			},
+			top: "65%",
+			height: "35%",
+			offset: 0,
+			lineWidth: 2
+		}],
+
+
+		legend: {
+			enabled: false
 		},
-
-
-
-		series: {
-			name: 'AAPL Stock Price',
+		series: [{
+			type: 'candlestick',
+			name: 'BTC Price Data',
 			color: '#EB4D5C',
 			lineColor: '#EB4D5C',
 			upColor: '#53B987',
 			upLineColor: '#53B987',
 			data: [],
-			// maxPointWidth: 5,
-			// pointWidth: 5,
 			dataGrouping: {
 				units: [
 					[
 						'minute',
-						[5,10,15]
-					], [
-						'hour',
-						[1]
+						[1, 2, 5, 10, 15, 30]
 					]
 				]
 			}
-		}
+		},
+		{
+			type: 'column',
+			name: 'volume',
+			yAxis: 1,
+			borderColor: '#1B2D30',
+			data: [],
+			dataGrouping: {
+				units: [
+					[
+						'minute',
+						[1, 2, 5, 10, 15, 30]
+					]
+				]
+			}
+		},
+		]
 	})
 
+
+
+
+
 	useEffect(() => {
+		// getData()
+		// 	.then((response) => {
+		// 		const volume = response.map((array) => [array[0], array[array.length - 1] * 2]);
+		// 		setOptions({
+		// 			series: [{
+		// 				...options.series[0],
+		// 				data: response
+		// 			}, {
+		// 				...options.series[1],
+		// 				data: volume,
+		// 			}]
+		// 		});
+		// 	})
+
+		// 	.catch((error) => {
+		// 		console.error(error);
+		// 	});
+
 		ws.onmessage = function (e) {
 			let data = JSON.parse(e.data)
-			console.log('message: ', data.message)
-			console.log('type: ', data.type)
-			
+			// console.log('message: ', data.message)
+			// console.log('type: ', data.type)
+
+
+
 			if (data.type === 'connection_established') {
 				getData()
 					.then((response) => {
+						const volume = response.map((array) => [array[0], array[array.length - 1]]);
+						console.log(response)
+						console.log(volume)
 						setOptions({
 							series: [{
-								...options.series,
+								...options.series[0],
 								data: response
+							}, {
+								...options.series[1],
+								data: volume
 							}]
 						});
+						
 					})
 					.catch((error) => {
 						console.error(error);
 					});
 			} else if (data.type === 'new') {
 				const values = data.message.map(item => parseFloat(item));
-				// console.log(values)
 				setOptions({
 					series: [{
-						...options.series,
+						...options.series[0],
 						data: [...options.series[0].data, [...values]]
+					}, {
+						...options.series[1],
+						data: [...options.series[1].data, [values[0], values[5]]]
 					}]
 				});
 
 			} else if (data.type === 'update') {
 				const values = data.message.map(item => parseFloat(item));
-				// console.log(values)
-				// console.log(typeof(options.series[0]?.data))
+				console.log(options.series[0])
+
 				setOptions({
 					series: [{
-						...options.series,
-						data: [...options.series[0].data.slice(0,-1), [...values]]
+						...options.series[0],
+						data: [...options.series[0].data.slice(0, -1), [...values]]
+					}, {
+						...options.series[1],
+						data: [...options.series[1].data.slice(0, -1), [values[0], values[5]]]
 					}]
 				});
 			}
-			// console.log(options.series[0]?.data)
-			
 		}
-		
+
 	}, [ws, options.series])
 	return (
-		<div style={{}}>
-			<HighchartsReact
-				highcharts={Highcharts}
-				options={options}
-				constructorType={'stockChart'}
-				style={{}}
-			/>
-		</div>
+		<>
+			<div style={{}}>
+				<HighchartsReact
+					highcharts={Highcharts}
+					options={options}
+					constructorType={'stockChart'}
+				/>
+			</div>
+
+		</>
+
 
 	);
 }
 
-require('highcharts/modules/stock')(Highcharts);
+
 function App() {
 	const ws = new WebSocket("ws://localhost:8000/ws/socket-server/");
 
 	return (
-		<div style={{ backgroundColor: '#11141B', height: '100vh', width: '100%', position:'fixed'}}>
+		<div style={{ backgroundColor: '#11141B', height: '100vh', width: '100%', position: 'fixed' }}>
 			<div style={{ position: 'relative', width: '75%', marginInline: 'auto', marginBlock: 'auto' }}>
-				<CandleChart ws={ws}/>
+				<CandleChart ws={ws} />
 			</div>
 		</div>
 	);

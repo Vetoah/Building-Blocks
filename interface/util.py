@@ -9,12 +9,12 @@ import numpy as np
 import os.path
 import httpx 
 from django.urls import resolve
+from django.apps import AppConfig
 from django.http import Http404
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 
-from flask import Flask, request, jsonify, Response
-app = Flask(__name__)
+
 
 trade_history = pd.DataFrame(columns=['timestamp', 'side', 'price', 'quantity'])
 five_min = pd.DataFrame()
@@ -44,7 +44,7 @@ async def getTrades():
       }))
 
       count = 0
-      while (count < 50):
+      while (count < 100):
         msg = await websocket.recv()
         data = json.loads(msg)
         if 'trades' in data:
@@ -105,6 +105,7 @@ async def main():
 
 if __name__=="__main__":
   # queue = asyncio.Queue()
-  # asyncio.run(getTrades(queue))
+  asyncio.run(getTrades())
   # app.run(debug=True)
-  asyncio.run(main())
+  # print('hello')
+  # asyncio.run(main())

@@ -15,7 +15,6 @@
   <div id="messages"></div>
   <script type="text/javascript">
     let url = `ws://${window.location.host}/ws/socket-server/`
-    console.log('uh: ' + url)
     const tickerSocket = new WebSocket(url)
 
     tickerSocket.onmessage = function(e) {
