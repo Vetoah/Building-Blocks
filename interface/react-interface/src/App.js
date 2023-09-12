@@ -16,6 +16,7 @@ require('highcharts/modules/stock')(Highcharts);
 function CandleChart({ ws }) {
 	const [options, setOptions] = useState({
 		chart: {
+			zoomType: 'x',
 			backgroundColor: 'transparent',
 			zooming: {
 				mouseWheel: true
@@ -25,17 +26,24 @@ function CandleChart({ ws }) {
 			buttons: [{
 				count: 1,
 				type: 'minute',
-				text: '1M'
+				text: '1M',
+				dataGrouping: {
+					forced: true,
+					units: [['minute', [1]]]
+			}
 			}, {
 				count: 5,
 				type: 'minute',
-				text: '5M'
+				text: '5M',
+				dataGrouping: {
+					forced: true,
+					units: [['minute', [5]]]
+			}
 			}, {
 				type: 'all',
 				text: 'All'
 			}],
-			inputEnabled: true,
-			selected: 0
+			inputEnabled: false,
 		},
 		title: {
 			text: 'BTC Price Data',
@@ -44,18 +52,27 @@ function CandleChart({ ws }) {
 			}
 		},
 		navigator: {
-			enabled: false,
-			color: 'purple',
+			enabled: true,
+
 		},
 
 		scrollbar: {
 			enabled: true
 		},
+
 		xAxis: {
 			gridLineWidth: 1,
 			gridLineColor: '#292B2E',
+			// min: 0, 
+			// max: 1559779200000
 			tickPixelInterval: 50,
 			minTickPixelInterval: 50,
+			labels: {
+				step: 2,
+				style: {
+					color: 'white'
+			}
+		}
 
 		},
 
@@ -67,12 +84,12 @@ function CandleChart({ ws }) {
 			title: {
 				text: "OHLC"
 			},
-			height: "60%",
+			height: '100%',
 			gridLineWidth: 1,
 			gridLineColor: '#292B2E',
 			resize: {
 				enabled: true
-			}
+		}
 		}, {
 			labels: {
 				align: "right",
@@ -81,15 +98,48 @@ function CandleChart({ ws }) {
 			title: {
 				text: "Volume"
 			},
-			top: "65%",
-			height: "35%",
-			offset: 0,
-			lineWidth: 2
+			offset: 50,
+			backgroundColor:'green',
+			top: '75%',
+			
+			height: '25%',
+			gridLineWidth: 0,
+			gridLineColor: 'transparent',
+
 		}],
 
 
 		legend: {
 			enabled: false
+		},
+		toolTip: {
+			enabled: false,
+			split: true
+		},
+		plotOptions: {
+			series: {
+				// enableMouseTracking: false,
+				pointPadding: 0,
+				dataGrouping: {
+					units: [
+						[
+							'minute',
+							[1, 2, 5, 10, 15, 30]
+						]
+					]
+				}
+			},
+			column: {
+				colorByPoint: true,
+				colors: ['#2F394B'],
+
+				yAxis: [{
+					gridLineWidth: 5,
+
+				}],
+				pointPadding: 0,
+
+			},
 		},
 		series: [{
 			type: 'candlestick',
@@ -98,6 +148,7 @@ function CandleChart({ ws }) {
 			lineColor: '#EB4D5C',
 			upColor: '#53B987',
 			upLineColor: '#53B987',
+			yAxis: 0,
 			data: [],
 			dataGrouping: {
 				units: [
@@ -106,13 +157,14 @@ function CandleChart({ ws }) {
 						[1, 2, 5, 10, 15, 30]
 					]
 				]
-			}
+			},
+
 		},
 		{
 			type: 'column',
 			name: 'volume',
 			yAxis: 1,
-			borderColor: '#1B2D30',
+			borderColor: 'transparent',
 			data: [],
 			dataGrouping: {
 				units: [
@@ -121,9 +173,9 @@ function CandleChart({ ws }) {
 						[1, 2, 5, 10, 15, 30]
 					]
 				]
-			}
-		},
-		]
+			},
+
+		}]
 	})
 
 
@@ -151,70 +203,72 @@ function CandleChart({ ws }) {
 
 		ws.onmessage = function (e) {
 			let data = JSON.parse(e.data)
-			// console.log('message: ', data.message)
-			// console.log('type: ', data.type)
-
-
 
 			if (data.type === 'connection_established') {
 				getData()
 					.then((response) => {
+						console.log('bruh')
 						const volume = response.map((array) => [array[0], array[array.length - 1]]);
 						console.log(response)
-						console.log(volume)
 						setOptions({
 							series: [{
 								...options.series[0],
 								data: response
 							}, {
 								...options.series[1],
-								data: volume
+								data: volume,
 							}]
 						});
-						
+
+
 					})
 					.catch((error) => {
 						console.error(error);
 					});
 			} else if (data.type === 'new') {
 				const values = data.message.map(item => parseFloat(item));
+				const volumeColor = values[1] < values[4] ? '#53B987' : '#EB4D5C';
+				console.log('color: ' + volumeColor)
 				setOptions({
 					series: [{
-						...options.series[0],
+						...options.series,
 						data: [...options.series[0].data, [...values]]
 					}, {
-						...options.series[1],
-						data: [...options.series[1].data, [values[0], values[5]]]
+						...options.series,
+						data: [...options.series[1].data, [values[0], values[5]]],
+						colors: [...options.series[1].colors, volumeColor]
 					}]
 				});
 
 			} else if (data.type === 'update') {
 				const values = data.message.map(item => parseFloat(item));
-				console.log(options.series[0])
+				const volumeColor = values[1] < values[4] ? '#53B987' : '#EB4D5C';
+				console.log('color: ' + volumeColor)
+				// console.log('update: '+ [...options.series[0].data.slice(0, -1), [...values]])
 
 				setOptions({
 					series: [{
-						...options.series[0],
+						...options.series,
 						data: [...options.series[0].data.slice(0, -1), [...values]]
 					}, {
-						...options.series[1],
-						data: [...options.series[1].data.slice(0, -1), [values[0], values[5]]]
+						...options.series,
+						data: [...options.series[1].data.slice(0, -1), [values[0], values[5]]],
+						colors: [...options.series[1].colors, volumeColor]
 					}]
 				});
 			}
+
+			console.log('init: ' + options.series[1].colors)
 		}
 
 	}, [ws, options.series])
 	return (
 		<>
-			<div style={{}}>
 				<HighchartsReact
 					highcharts={Highcharts}
 					options={options}
 					constructorType={'stockChart'}
 				/>
-			</div>
-
 		</>
 
 
@@ -226,12 +280,10 @@ function App() {
 	const ws = new WebSocket("ws://localhost:8000/ws/socket-server/");
 
 	return (
-		<div style={{ backgroundColor: '#11141B', height: '100vh', width: '100%', position: 'fixed' }}>
-			<div style={{ position: 'relative', width: '75%', marginInline: 'auto', marginBlock: 'auto' }}>
-				<CandleChart ws={ws} />
-			</div>
+		<div style={{ position: 'relative', width: '75%', marginInline: 'auto', marginBlock: 'auto', height: 'auto', paddingBlock: '5%' }}>
+			<CandleChart ws={ws} />
 		</div>
-	);
+	)
 }
 
 export default App;

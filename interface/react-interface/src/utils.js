@@ -20,12 +20,15 @@ function parseData(data) {
 
 
 export function getData() {
-	return fetch("http://127.0.0.1:8000/trades")
+	return fetch("http://127.0.0.1:8000/api/klinetrades/get")
 		.then(response => {
       return response.json()
     })
 		.then(data => {
+     console.log(data)
+    
       return data.map(obj => Object.values(obj).map(value => parseFloat(value)));
+      
     })
 	// return json_fetch;
 }

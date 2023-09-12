@@ -19,16 +19,9 @@ from asgiref.sync import async_to_sync
 trade_history = pd.DataFrame(columns=['timestamp', 'side', 'price', 'quantity'])
 five_min = pd.DataFrame()
 
-async def sendData():
-  channel_layer = get_channel_layer()
-  group_name = "lobby"
-  await (channel_layer.group_send)(
-    group_name,
-    {
-      'type': 'ping_message',
-      'message': "SENDIN MESSAGE!!!!!!!!!!"
-    }
-  )
+# gets live trades, passes it to ticker creation function, which is then POST'd (or PUT'd if object already exists) to a database.
+# After each instance is saved, a message is sent over the websocket connection to a client (which is my React program) which contains
+# the new or updated ticker
 
 async def getTrades():
   global trade_history
@@ -62,9 +55,7 @@ async def five_min_ticker(count):
   global trade_history
 
   cutoff = 0
-  local_ws = "ws://localhost:8000/ws/socket-server/"
 
-  # async with websockets.connect(local_ws) as ping:
   if(len(trade_history) == 1000):
     five_min = pd.DataFrame(trade_history.groupby(pd.Grouper(key='timestamp', freq='5min'))['price'].agg([('opening', 'first'),('high', 'max'),('low', 'min'), ('closing', 'last'), ('volume', 'sum')]))
     five_min.reset_index(drop=False, inplace=True)
@@ -75,13 +66,10 @@ async def five_min_ticker(count):
 
     current_candle = pd.DataFrame(current_period_data.groupby(pd.Grouper(key='timestamp', freq='5min'))['price'].agg([('opening', 'first'),('high', 'max'),('low', 'min'), ('closing', 'last'), ('volume', 'sum')]))
     current_candle.reset_index(drop=False, inplace=True)
-    # print(current_ticker)
 
     five_min = five_min[: -1]
     five_min = pd.concat([five_min, current_candle])
 
-  # five_min['timestamp'] = five_min['timestamp'].astype(str)
-  # await sendData()
   five_min['json'] = five_min.to_json(orient='records', lines=True).splitlines()
 
   if (count >= 1):
@@ -93,19 +81,77 @@ async def five_min_ticker(count):
       response = await client.post(f'http://127.0.0.1:8000/api/ticker5/', json=json.loads(data))
       if(response.status_code >= 300):
         response = await client.put(f'http://127.0.0.1:8000/api/ticker5/{response.status_code - 300}/', json=json.loads(data))
-  # ping.send(json.dumps ({
-  #   'type': 'ping',
-  #   'message' : 'hola motha trucka'
-  # }))
+
+async def getKline (period, symbol, websocket):
+  print('inside kline')
+  await websocket.send(json.dumps({
+      "id": 1234,
+      "method": "kline.subscribe",
+      "params": [
+          symbol,
+          period
+      ]
+  }))
+ 
+  msg = await websocket.recv()
+  data = json.loads(msg)
+  if 'kline' in data:
+    trades = pd.DataFrame(data['kline'], columns=['timestamp', 'interval', 'last_close', 'opening', 'high', 'low', 'closing', 'volume', 'turnover'])
+    trades['timestamp'] = pd.to_datetime(trades['timestamp'], unit='s')
+    trades['last_close'] = trades['last_close'].astype(float) / 10000
+    trades['opening'] = trades['opening'].astype(float) / 10000
+    trades['high'] = trades['high'].astype(float) / 10000
+    trades['low'] = trades['low'].astype(float) / 10000
+    trades['closing'] = trades['closing'].astype(float) / 10000
+
+    trades = trades.drop(['interval', 'turnover','last_close'], axis=1)
+    trades = trades.sort_values(by='timestamp')
+
+    trades['json'] = trades.to_json(orient='records', lines=True).splitlines()
+
+
+    for idx, data in enumerate(trades['json']):
+      async with httpx.AsyncClient() as client:
+        response = await client.post(f'http://127.0.0.1:8000/api/klinetrades', json=json.loads(data))
+          
+async def getOrderbook (symbol):
+  async with httpx.AsyncClient() as client:
+    response = await client.get(f'https://api.phemex.com/md/orderbook?symbol={symbol}')
+    msg = json.loads(response.text)
+    if 'result' in msg:
+      asks = pd.DataFrame(msg['result']['book']['asks'], columns=['price', 'quantity'])
+      asks['price'] = asks['price'].astype(float) / 10000
+      asks['side'] = 'asks'
+      bids = pd.DataFrame(msg['result']['book']['bids'], columns=['price', 'quantity'])
+      bids['price'] = bids['price'].astype(float) / 10000
+      bids['side'] = 'bids'
+      asks['json'] = asks.to_json(orient='records', lines=True).splitlines()
+      for idx, data in enumerate(asks['json']):
+        async with httpx.AsyncClient() as client:
+          response = await client.post(f'http://127.0.0.1:8000/api/orderbook', json=json.loads(data))
+
 async def main():
+  uri  = "wss://phemex.com/ws"
+  count = 0
+
+  async with websockets.connect(uri) as websocket:
+    
+    while (count < 3):
+      task1 = asyncio.create_task(getKline(300,'BTCUSD', websocket))
+      # task2 = asyncio.create_task(getOrderbook('BTCUSD'))
+      await task1
+      # await task2
+    #   await task2
+      count += 1
+
+
   return
   # async with websockets.connect("ws://localhost:8000/wserver")) as ping:
   #   ping.onmessage = (data) 
   # await retrieval
 
 if __name__=="__main__":
-  # queue = asyncio.Queue()
-  asyncio.run(getTrades())
+  asyncio.run(main())
   # app.run(debug=True)
   # print('hello')
   # asyncio.run(main())

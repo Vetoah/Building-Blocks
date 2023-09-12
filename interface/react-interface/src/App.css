@@ -5,6 +5,13 @@
   width: 100px;
 }
 
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #11141B; /* Change the background color as needed */
+  /* Add other styles as needed */
+}
+
 .App-logo {
   height: 40vmin;
   pointer-events: none;
@@ -39,3 +46,5 @@
     transform: rotate(360deg);
   }
 }
+
+
