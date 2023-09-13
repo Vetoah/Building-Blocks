@@ -56,7 +56,22 @@ class KlineTickerModel(models.Model):
 @receiver(post_save, sender=KlineTickerModel)
 def klineTrade_model_post_save(sender, instance, created, *args, **kwargs):
   instance_values = [str(value) for fields, value in list(instance.__dict__.items())[2:]]
-  print(instance_values)
+  # if created:
+  #   async_to_sync(channel_layer.group_send)(
+  #     group_name,
+  #     {
+  #       'type': 'new_candle',
+  #       'message': instance_values
+  #     }
+  #   )
+  # else:
+  #   async_to_sync(channel_layer.group_send)(
+  #     group_name,
+  #     {
+  #       'type': 'update_candle',
+  #       'message': instance_values
+  #     }
+  #   )
 
 class OrderbookModel(models.Model):
   price = models.CharField(max_length = 200)

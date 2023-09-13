@@ -83,7 +83,6 @@ async def five_min_ticker(count):
         response = await client.put(f'http://127.0.0.1:8000/api/ticker5/{response.status_code - 300}/', json=json.loads(data))
 
 async def getKline (period, symbol, websocket):
-  print('inside kline')
   await websocket.send(json.dumps({
       "id": 1234,
       "method": "kline.subscribe",
@@ -109,7 +108,6 @@ async def getKline (period, symbol, websocket):
 
     trades['json'] = trades.to_json(orient='records', lines=True).splitlines()
 
-
     for idx, data in enumerate(trades['json']):
       async with httpx.AsyncClient() as client:
         response = await client.post(f'http://127.0.0.1:8000/api/klinetrades', json=json.loads(data))
@@ -122,11 +120,17 @@ async def getOrderbook (symbol):
       asks = pd.DataFrame(msg['result']['book']['asks'], columns=['price', 'quantity'])
       asks['price'] = asks['price'].astype(float) / 10000
       asks['side'] = 'asks'
+      asks['json'] = asks.to_json(orient='records', lines=True).splitlines()
+
       bids = pd.DataFrame(msg['result']['book']['bids'], columns=['price', 'quantity'])
       bids['price'] = bids['price'].astype(float) / 10000
       bids['side'] = 'bids'
-      asks['json'] = asks.to_json(orient='records', lines=True).splitlines()
+      bids['json'] = bids.to_json(orient='records', lines=True).splitlines()
+
       for idx, data in enumerate(asks['json']):
+        async with httpx.AsyncClient() as client:
+          response = await client.post(f'http://127.0.0.1:8000/api/orderbook', json=json.loads(data))
+      for idx, data in enumerate(bids['json']):
         async with httpx.AsyncClient() as client:
           response = await client.post(f'http://127.0.0.1:8000/api/orderbook', json=json.loads(data))
 
@@ -138,10 +142,10 @@ async def main():
     
     while (count < 3):
       task1 = asyncio.create_task(getKline(300,'BTCUSD', websocket))
-      # task2 = asyncio.create_task(getOrderbook('BTCUSD'))
+      task2 = asyncio.create_task(getOrderbook('BTCUSD'))
       await task1
-      # await task2
-    #   await task2
+      await task2
+
       count += 1
 
 

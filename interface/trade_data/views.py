@@ -22,8 +22,9 @@ def orderbook(request, **kwargs):
 
 @api_view(['GET'])
 def getOrderbook(request):
-  orders = OrderbookModel.objects.all()
+  orders = OrderbookModel.objects.all().order_by('-price').values()
   serializer = OrderbookSerializer(orders, many=True)
+
   return Response(serializer.data)
 
 @api_view(['POST'])
