@@ -56,22 +56,25 @@ class KlineTickerModel(models.Model):
 @receiver(post_save, sender=KlineTickerModel)
 def klineTrade_model_post_save(sender, instance, created, *args, **kwargs):
   instance_values = [str(value) for fields, value in list(instance.__dict__.items())[2:]]
-  # if created:
-  #   async_to_sync(channel_layer.group_send)(
-  #     group_name,
-  #     {
-  #       'type': 'new_candle',
-  #       'message': instance_values
-  #     }
-  #   )
-  # else:
-  #   async_to_sync(channel_layer.group_send)(
-  #     group_name,
-  #     {
-  #       'type': 'update_candle',
-  #       'message': instance_values
-  #     }
-  #   )
+  channel_layer = get_channel_layer()
+  group_name = "lobby"
+
+  if created:
+    async_to_sync(channel_layer.group_send)(
+      group_name,
+      {
+        'type': 'new_candle',
+        'message': instance_values
+      }
+    )
+  else:
+    async_to_sync(channel_layer.group_send)(
+      group_name,
+      {
+        'type': 'update_candle',
+        'message': instance_values
+      }
+    )
 
 class OrderbookModel(models.Model):
   price = models.CharField(max_length = 200)
@@ -81,26 +84,9 @@ class OrderbookModel(models.Model):
 
 @receiver(post_save, sender=OrderbookModel)
 def order_model_post_save(sender, instance, created, *args, **kwargs):
-  instance_values = [str(value) for fields, value in list(instance.__dict__.items())[2:]]
-  # print(instance_values)
-  # channel_layer = get_channel_layer()
-  # group_name = "lobby"
-  # instance_values = [str(value) for fields, value in list(instance.__dict__.items())[2:]]
-  # if created:
-
-  #   async_to_sync(channel_layer.group_send)(
-  #     group_name,
-  #     {
-  #       'type': 'new_candle',
-  #       'message': instance_values
-  #     }
-  #   )
-  # else:
-  #   async_to_sync(channel_layer.group_send)(
-  #     group_name,
-  #     {
-  #       'type': 'update_candle',
-  #       'message': instance_values
-  #     }
-  #   )
+  instances = OrderbookModel.objects.filter(quantity=0)
+  instances.delete()
+  print('deleted')
+ 
+  
 
