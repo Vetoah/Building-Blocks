@@ -6,7 +6,6 @@ class TradeSerializer(serializers.ModelSerializer):
     model = TradeModel
     fields = '__all__'
 
-
 class TickerSerializer(serializers.ModelSerializer):
   class Meta:
     model = TickerModel
@@ -22,10 +21,5 @@ class OrderbookSerializer(serializers.ModelSerializer):
     model = OrderbookModel
     fields = ['price', 'quantity', 'side']
 
-  # def update(self, instance, validated_data):
-  #   instance_meta = instance.meta.copy()
-  #   instance_meta.update(validated_data.get("meta", {}))
-  #   validated_data["meta"] = instance_meta
-  #   return super().update(instance, validated_data)
 
 

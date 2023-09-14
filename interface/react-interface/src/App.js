@@ -1,93 +1,42 @@
 import './App.css';
-import React, { Suspense, useEffect, useState } from 'react';
-import { config, a, animated, useSpring, useSprings } from '@react-spring/web'
-
+import './index.css';
+import React, { useEffect, useState } from 'react';
 import { getData, getOrders } from "./utils"
-
-
 import Highcharts from 'highcharts'
 import HighchartsReact from 'highcharts-react-official'
 
 require('highcharts/modules/stock')(Highcharts);
 require('highcharts/modules/price-indicator')(Highcharts);
 
-function DisplayBids({ marked, bids, latestPrice, max }) {
-	const updatedAnim2 = useSpring(bids.length, (index) => ({
-		from: {
-			backgroundColor: marked[index] ? '#53B987' : 'transparent'
-		},
-		to: {
-			backgroundColor: 'transparent'
-		},
-
-	}))
-
-	const [updatedAnim] = useSprings(
-		bids.length,
-		(i) => ({
-			from: {
-				backgroundColor: marked[i] ? '#53B987' : 'transparent'
-			},
-			to: {
-				backgroundColor: 'transparent'
-			},
-			config: config.slow
-		}),
-		[marked]
-	);
-
+function DisplayBids({ bids, latestPrice, max }) {
 	useEffect(() => {
-	}, [bids, marked])
+	}, [bids, latestPrice, max])
 	return (
-		<div style={{ height: '45%', overflow: 'hidden', position: 'relative' }}>
-
-			{updatedAnim.map(({ backgroundColor }, i) => (
+		<div style={{ height: '45%', width: '95%', position: 'relative' }}>
+			{bids.map((order) => (
 				<div style={{ height: '10%', display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}>
-					<div style={{ textAlign: 'left', color: '#53B987', width: '20%', }}>
-						{bids[i][0]}
+					<div className='robo' style={{ textAlign: 'left', color: '#53B987', width: '20%', }}>
+						{(order[0]).toFixed(1)}
 					</div>
-					<animated.div style={{ textAlign: 'right', width: '35%', backgroundColor }}>
-						{(bids[i][1] / latestPrice).toFixed(5)}
-					</animated.div>
-					<div style={{ textAlign: 'right', width: '35%', position: 'relative' }}>
-						<div style={{ position: 'absolute', width: `${bids[i][1] / max * 100}%`, height: '100%', backgroundColor: '#53B98725' }} />
-						{bids[i][1]}
+					<div className='robo' style={{ textAlign: 'right', width: '35%' }}>
+						{(order[1] / latestPrice).toFixed(5)}
+					</div>
+					<div className='robo' style={{ textAlign: 'right', width: '35%', position: 'relative' }}>
+						<div style={{ position: 'absolute', width: `${order[1] / max * 100}%`, height: '100%', backgroundColor: '#53B98725', left:'0px' }} />
+						{order[1].toLocaleString()}
 					</div>
 				</div>
 			))}
-
-			{/* {bids.map((innerArray) => (
-					<div style={{ height: '10%', display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}>
-						<div style={{ textAlign: 'left',color:'#53B987', width:'20%', backgroundColor:'grey' }}>
-							{innerArray[0]}
-						</div>
-						<a.div style={{ textAlign: 'right', width:'35%', backgroundColor:'grey' }}>
-							{(innerArray[1] / latestPrice).toFixed(5)}
-						</a.div>
-						<div style={{ textAlign: 'right', width:'35%', backgroundColor:'grey' }}>
-							{innerArray[1]}
-						</div>
-					</div>
-				))} */}
 		</div>
 	)
 }
-// lineColor: '#EB4D5C',
-// 			upColor: '#53B987',
-function DisplayAsks({ marked, asks, latestPrice, max }) {
-	const [updatedAnim] = useSprings(
-		asks.length,
-		(i) => ({
 
-			config: config.slow
-		}),
-	);
-
+function DisplayAsks({ asks, latestPrice, max }) {
 	useEffect(() => {
-	}, [asks, marked, latestPrice])
+	}, [asks, max, latestPrice])
 	return (
 		<>
-			<div style={{ position: 'absolute', top: '-25px', width: '95%', display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}>
+			<div className='robo medium' style={{ position: 'absolute', top: '-25px', width: '95%', display: 'flex', flexDirection: 'row', justifyContent: 'space-between' ,}}>
 				<span style={{ textAlign: 'center', width: '20%' }}>
 					Price
 				</span>
@@ -99,128 +48,105 @@ function DisplayAsks({ marked, asks, latestPrice, max }) {
 				</span>
 			</div>
 
-			<div style={{ height: '45%', width: '95%', position: 'relative', overflow: 'hidden', }}>
+			<div style={{ height: '45%', width: '95%', position: 'relative', }}>
 
-				{updatedAnim.map(({ backgroundColor }, i) => (
+				{asks.map((order) => (
 					<div style={{ height: '10%', display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}>
-						<div style={{ textAlign: 'left', color: '#EB4D5C', width: '20%', }}>
-							{asks[i][0]}
+						<div className='robo' style={{ textAlign: 'left', color: '#EB4D5C', width: '20%', }}>
+							{(order[0]).toFixed(1)}
 						</div>
-						<animated.div style={{ textAlign: 'right', width: '35%', backgroundColor }}>
-							{(asks[i][1] / latestPrice).toFixed(5)}
-						</animated.div>
-						<div style={{ textAlign: 'right', width: '35%', position: 'relative' }}>
-							<div style={{ position: 'absolute', width: `${asks[i][1] / max * 100}%`, height: '100%', backgroundColor: '#EB4D5C25' }} />
-							{asks[i][1]}
+						<div className='robo' style={{ textAlign: 'right', width: '35%' }}>
+							{(order[1] / latestPrice).toFixed(5)}
+						</div>
+						<div className='robo' style={{ textAlign: 'right', width: '35%', position: 'relative' }}>
+							<div style={{ position: 'absolute', width: `${order[1] / max * 100}%`, height: '100%', backgroundColor: '#EB4D5C25', left:'0px' }} />
+							{order[1].toLocaleString()}
 						</div>
 					</div>
 
 				))}
-				{/* {asks.map((innerArray) => (
-					<div style={{ height: '10%', display: 'flex', flexDirection: 'row', justifyContent: 'space-between', }}>
-						<div style={{ textAlign: 'left', color:'#EB4D5C', width:'20%', backgroundColor:'grey' }}>
-							{innerArray[0]}
-						</div>
-						<div style={{ textAlign: 'right', width:'35%', backgroundColor:'grey' }}>
-							{(innerArray[1] / latestPrice).toFixed(5)}
-						</div>
-						<div style={{ textAlign: 'right', width:'35%', backgroundColor:'grey' }}>
-							{innerArray[1]}
-						</div>
-					</div>
-				))} */}
 			</div>
-
 		</>
-
 	)
 }
 
-function OrderBook({ data }) {
+function OrderBook({ data, currPrice }) {
+	const [connected, setConnected] = useState(0)
 	const [max, setMax] = useState(0)
 	const [asks, setAsks] = useState([])
-	const [markedAsks, setMarkedAsks] = useState([])
-
 	const [bids, setBids] = useState([])
-	const [markedBids, setMarkedBids] = useState([])
+	const [latestTradePrice, setPrice] = useState(0)
 
-	const [latestTradePrice, setPrice] = useState(25810.15)
+	const handleOrders = () => {
+		getOrders()
+			.then((response) => {
+				setAsks(response.asks.reverse().slice(-10))
+				setBids(response.bids.slice(0, 10))
+				setMax(response.qty)
+			})
+			.catch((error) => {
+				console.error(error);
+			});
+	}
 
 	useEffect(() => {
-		setInterval(() => {
-			getOrders()
-				.then((response) => {
-					setAsks(response.asks.reverse())
-					setBids(response.bids)
-					setMax(response.qty)
-				})
-				.catch((error) => {
-					console.error(error);
-				});
-		}, 5000);
-
-		if (data?.type === 'connection_established' || data?.type === 'new' || data?.type === 'update') {
-			getOrders()
-				.then((response) => {
-					setAsks(response.asks.reverse())
-					setBids(response.bids)
-					setMax(response.qty)
-				})
-				.catch((error) => {
-					console.error(error);
-				});
+		if (data?.type === 'connection_established') {
+			setConnected(true)
+			setPrice(currPrice)
+			handleOrders()
+		} else if (data?.type === 'new' || data?.type === 'update') {
+			const values = data.message.map(item => parseFloat(item));
+			setPrice(values[4])
 		}
-
-	}, [data])
+		if (connected) {
+			const intervalId = setInterval(handleOrders, 10000);
+			return () => {
+				clearInterval(intervalId)
+			}
+		}
+	}, [data, connected, currPrice])
 	return (
-		<div style={{ borderWidth: '1px', color: '#C9C9C9', height: '100%', width: '250px', position: 'relative', display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingInline: '10px', }}>
-			<DisplayAsks marked={markedAsks} asks={asks} latestPrice={latestTradePrice} max={max} />
-			<div style={{ height: '50px', display: 'flex', alignItems: 'center', borderTop: '1px solid #C9C9C950', borderBottom: '1px solid #C9C9C950', marginRight: '10px' }}>
-				{latestTradePrice}
-
+		<div style={{ borderWidth: '1px', color: '#C9C9C9', height: '100%', width: '300px', position: 'relative', display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingInline: '0px', }}>
+			<DisplayAsks asks={asks} latestPrice={latestTradePrice} max={max} />
+			<div className='robo' style={{ height: '50px', justifyContent: 'left', alignItems: 'center', borderTop: '1px solid #C9C9C950', borderBottom: '1px solid #C9C9C950', marginRight: '10px' }}>
+				Current price: <span className='medium' style={{textIndent:'1rem'}}> {(latestTradePrice).toLocaleString()} </span>
 			</div>
-			<DisplayBids marked={markedAsks} bids={bids} latestPrice={latestTradePrice} max={max} />
+			<DisplayBids bids={bids} latestPrice={latestTradePrice} max={max} />
 		</div>
 	)
 }
 
-function CandleChart({ data }) {
+function CandleChart({ data, init }) {
 	const [options, setOptions] = useState({
 		chart: {
 			margin: [0, 0, 30, 0],
-			spacingRight: 50,
+			spacingRight: 0,
 			backgroundColor: 'transparent',
-			style: {
-
-			},
 			zooming: {
 				mouseWheel: true
 			},
 		},
+		title: {
+			text: 'BTC/USD',
+			style:{
+				color:'#C9C9C9',
+			},
+			align: 'left',
+			x: 0,
+			y: 10
+		},
 		rangeSelector: {
 			enabled: false
 		},
-		title: {
-			text: 'BTC Price Data',
-			style: {
-				color: 'white'
-			}
-		},
 		navigator: {
 			enabled: false,
-
 		},
 		tooltip: {
 			enabled: false
 		},
-
 		scrollbar: {
 			enabled: false
 		},
-
-
-
-
 		xAxis: {
 			width: '88%',
 			crosshair: {
@@ -229,8 +155,6 @@ function CandleChart({ data }) {
 			},
 			gridLineWidth: 1,
 			gridLineColor: '#242628',
-			// startOnTick: true,
-			// endOnTick: true,
 			tickPixelInterval: 150,
 			minTickPixelInterval: 150,
 			labels: {
@@ -239,7 +163,6 @@ function CandleChart({ data }) {
 					color: 'white'
 				}
 			}
-
 		},
 
 		yAxis: [{
@@ -251,9 +174,6 @@ function CandleChart({ data }) {
 				label: {
 					enabled: true,
 					format: '{value:.2f}',
-					style: {
-
-					}
 				}
 			},
 			labels: {
@@ -271,21 +191,16 @@ function CandleChart({ data }) {
 				enabled: true
 			}
 		}, {
-
 			top: '75%',
 			height: '25%',
 			gridLineColor: 'transparent',
 			labels: {
 				enabled: false,
 			}
-
 		}],
-
-
 		legend: {
 			enabled: false
 		},
-
 		plotOptions: {
 			series: {
 				borderRadius: {
@@ -328,9 +243,7 @@ function CandleChart({ data }) {
 				yAxis: [{
 					gridLineWidth: 5,
 					reversed: true
-
 				}],
-
 			},
 		},
 		series: [{
@@ -344,9 +257,9 @@ function CandleChart({ data }) {
 				enabled: true,
 				label: {
 					enabled: true,
-
+					backgroundColor:'#E8E8E8',
 					style: {
-						color: '#C9C9C9',
+						color: 'black',
 					}
 				}
 			},
@@ -356,11 +269,10 @@ function CandleChart({ data }) {
 				units: [
 					[
 						'minute',
-						[5]
+						[5,10,15]
 					]
 				]
 			},
-
 		},
 		{
 			type: 'column',
@@ -372,7 +284,7 @@ function CandleChart({ data }) {
 				units: [
 					[
 						'minute',
-						[5]
+						[5,10,15]
 					]
 				]
 			},
@@ -380,34 +292,12 @@ function CandleChart({ data }) {
 		}]
 	})
 
-
-
-
-
 	useEffect(() => {
-		// getData()
-		// 	.then((response) => {
-		// 		const volume = response.map((array) => [array[0], array[array.length - 1] * 2]);
-		// 		setOptions({
-		// 			series: [{
-		// 				...options.series[0],
-		// 				data: response
-		// 			}, {
-		// 				...options.series[1],
-		// 				data: volume,
-		// 			}]
-		// 		});
-		// 	})
-
-		// 	.catch((error) => {
-		// 		console.error(error);
-		// 	});
-
-
 		if (data?.type === 'connection_established') {
 			getData()
 				.then((response) => {
-					// console.log(response)
+					const current_price = response[response.length - 1][4]
+					init(current_price)
 					const volume = response.map((array) => [array[0], array[array.length - 1]]);
 					setOptions({
 						series: [{
@@ -418,8 +308,6 @@ function CandleChart({ data }) {
 							data: volume,
 						}]
 					});
-
-
 				})
 				.catch((error) => {
 					console.error(error);
@@ -449,41 +337,40 @@ function CandleChart({ data }) {
 				}]
 			});
 		}
-
-
 	}, [data])
 	return (
-		<>
-			<HighchartsReact
-				highcharts={Highcharts}
-				options={options}
-				constructorType={'stockChart'}
-			/>
-		</>
-
-
+		<HighchartsReact
+			highcharts={Highcharts}
+			options={options}
+			constructorType={'stockChart'}
+		/>
 	);
 }
 
-
-
 function App() {
 	const [msg, setMessage] = useState(null)
+	const [initPrice, setInitPrice] = useState(0)
+
+	const handleInitPrice = (price) => {
+		console.log('handleInitPrice: ' + price)
+		if (!initPrice)
+			setInitPrice(price)
+	}
 	useEffect(() => {
 		const ws = new WebSocket("ws://localhost:8000/ws/socket-server/");
-
 		ws.onmessage = function (e) {
 			let data = JSON.parse(e.data)
 			setMessage(data)
-
 		}
 	}, [])
 
 	return (
-		<div style={{ height: '75vh', width: '100%', display: 'flex', justifyContent: 'center', marginBlock: '12.5vh' }}>
-			<OrderBook data={msg} />
-			<CandleChart data={msg} />
-		</div>
+		<>
+			<div style={{ height: '75vh', width: '100%', display: 'flex', justifyContent: 'center', marginBlock: '12.5vh' }}>
+				<OrderBook data={msg} currPrice={initPrice} />
+				<CandleChart data={msg} init={handleInitPrice} />
+			</div>
+		</>
 	)
 }
 

@@ -13,8 +13,6 @@ from django.core.asgi import get_asgi_application
 from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.auth import AuthMiddlewareStack
 import trade_data.routing
-# from trade_data.consumers import TickerConsumer
-# from django.urls import path
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'interface.settings')
 
@@ -26,10 +24,3 @@ application = ProtocolTypeRouter({
     )
   )
 })
-
-# application = ProtocolTypeRouter({
-#   'http' :get_asgi_application(),
-#   'websocket' : URLRouter([
-#       path('wserver', TickerConsumer.as_asgi())
-#     ])
-# })

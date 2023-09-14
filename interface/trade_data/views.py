@@ -5,7 +5,6 @@ from django.urls import reverse
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import generics
-# from .util import getTrades
 from .models import TradeModel, TickerModel, KlineTickerModel, OrderbookModel
 from interface.serializers import TradeSerializer, TickerSerializer, OrderbookSerializer, KlineTickerSerializer
 import asyncio

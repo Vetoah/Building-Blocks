@@ -22,7 +22,6 @@ five_min = pd.DataFrame()
 # gets live trades, passes it to ticker creation function, which is then POST'd (or PUT'd if object already exists) to a database.
 # After each instance is saved, a message is sent over the websocket connection to a client (which is my React program) which contains
 # the new or updated ticker
-
 async def getTrades():
   global trade_history
   uri  = "wss://phemex.com/ws"
@@ -74,7 +73,6 @@ async def five_min_ticker(count):
 
   if (count >= 1):
     cutoff = -1
-    print('--------------------------------------------------')
 
   for idx, data in enumerate(five_min['json'][cutoff:]):
     async with httpx.AsyncClient() as client:
@@ -83,113 +81,23 @@ async def five_min_ticker(count):
         response = await client.put(f'http://127.0.0.1:8000/api/ticker5/{response.status_code - 300}/', json=json.loads(data))
 
 async def getKline(msg):
-  # if queue.empty():
-  #   await websocket.send(json.dumps({
-  #       "id": 1234,
-  #       "method": "kline.subscribe",
-  #       "params": [
-  #           symbol,
-  #           period
-  #       ]
-  #   }))
+  trades = pd.DataFrame(msg['kline'], columns=['timestamp', 'interval', 'last_close', 'opening', 'high', 'low', 'closing', 'volume', 'turnover'])
+  trades['timestamp'] = pd.to_datetime(trades['timestamp'], unit='s')
+  trades['last_close'] = trades['last_close'].astype(float) / 10000
+  trades['opening'] = trades['opening'].astype(float) / 10000
+  trades['high'] = trades['high'].astype(float) / 10000
+  trades['low'] = trades['low'].astype(float) / 10000
+  trades['closing'] = trades['closing'].astype(float) / 10000
 
-  #   msg = await websocket.recv()
-  #   await asyncio.sleep(msg)
-    # data = json.loads(msg)
+  trades = trades.drop(['interval', 'turnover','last_close'], axis=1)
+  trades = trades.sort_values(by='timestamp')
 
-  if 'kline' in msg:
-    trades = pd.DataFrame(msg['kline'], columns=['timestamp', 'interval', 'last_close', 'opening', 'high', 'low', 'closing', 'volume', 'turnover'])
-    trades['timestamp'] = pd.to_datetime(trades['timestamp'], unit='s')
-    trades['last_close'] = trades['last_close'].astype(float) / 10000
-    trades['opening'] = trades['opening'].astype(float) / 10000
-    trades['high'] = trades['high'].astype(float) / 10000
-    trades['low'] = trades['low'].astype(float) / 10000
-    trades['closing'] = trades['closing'].astype(float) / 10000
+  trades['json'] = trades.to_json(orient='records', lines=True).splitlines()
 
-    trades = trades.drop(['interval', 'turnover','last_close'], axis=1)
-    trades = trades.sort_values(by='timestamp')
+  for idx, data in enumerate(trades['json']):
+    async with httpx.AsyncClient() as client:
+      response = await client.post(f'http://127.0.0.1:8000/api/klinetrades', json=json.loads(data))
 
-    trades['json'] = trades.to_json(orient='records', lines=True).splitlines()
-
-    for idx, data in enumerate(trades['json']):
-      async with httpx.AsyncClient() as client:
-        response = await client.post(f'http://127.0.0.1:8000/api/klinetrades', json=json.loads(data))
-
-async def getOrderbook2 (symbol, websocket, period):
-    while True:
-      await websocket.send(json.dumps({
-          "id": 1234,
-          "method": "kline.subscribe",
-          "params": [
-              symbol,
-              period
-          ]
-      }))
-
-      msg = await websocket.recv()
-
-      data = json.loads(msg)
-      if 'kline' in data:
-        print('kline connected')
-        break
-
-    while True:
-      await websocket.send(json.dumps({
-          "id": 1234,
-          "method": "orderbook.subscribe",
-          "params": [
-              symbol
-          ]
-      }))
-
-      msg = await websocket.recv()
-      data = json.loads(msg)
-      if 'book' in data:
-        print('book connected')
-        
-        break
-    
-    count = 0
-    
-    while (count < 100):
-      
-
-      msg = await websocket.recv()
-
-      data = json.loads(msg)
-      if 'kline' in data:
-        print('kline still connected')
-        print(data['type'])
-      if 'book' in data:
-        print('book still connected')
-        print(data['book'])
-
-     
-      count += 1
-
-
-    
-
-    
-
-  # if 'result' in msg:
-  #   asks = pd.DataFrame(msg['result']['book']['asks'], columns=['price', 'quantity'])
-  #   asks['price'] = asks['price'].astype(float) / 10000
-  #   asks['side'] = 'asks'
-  #   asks['json'] = asks.to_json(orient='records', lines=True).splitlines()
-
-  #   bids = pd.DataFrame(msg['result']['book']['bids'], columns=['price', 'quantity'])
-  #   bids['price'] = bids['price'].astype(float) / 10000
-  #   bids['side'] = 'bids'
-  #   bids['json'] = bids.to_json(orient='records', lines=True).splitlines()
-
-  #   for idx, data in enumerate(asks['json']):
-  #     async with httpx.AsyncClient() as orderbook_client:
-  #       response = await orderbook_client.post(f'http://127.0.0.1:8000/api/orderbook', json=json.loads(data))
-  #   for idx, data in enumerate(bids['json']):
-  #     async with httpx.AsyncClient() as orderbook_client:
-  #       response = await orderbook_client.post(f'http://127.0.0.1:8000/api/orderbook', json=json.loads(data))
-          
 async def getOrderbook (msg):
   if 'book' in msg:
     asks = pd.DataFrame(msg['book']['asks'], columns=['price', 'quantity'])
@@ -205,13 +113,11 @@ async def getOrderbook (msg):
     for idx, data in enumerate(asks['json']):
       async with httpx.AsyncClient() as orderbook_client:
         if data:
-          print(json.loads(data))
           response = await orderbook_client.post(f'http://127.0.0.1:8000/api/orderbook', json=json.loads(data))
           
     for idx, data in enumerate(bids['json']):
       async with httpx.AsyncClient() as orderbook_client:
         if data:
-          print(json.loads(data))
           response = await orderbook_client.post(f'http://127.0.0.1:8000/api/orderbook', json=json.loads(data))
 
 async def subscriptions(websocket, symbol, period):
@@ -255,35 +161,18 @@ async def subscriptions(websocket, symbol, period):
     if 'book' in data:
       orderbook = asyncio.create_task(getOrderbook(data))
       await orderbook
-    elif 'kline' in data:
+    if 'kline' in data:
       kline = asyncio.create_task(getKline(data))
       await kline
+      print(count)
       count += 1
-
 
 async def main():
   uri  = "wss://phemex.com/ws"
- 
   async with websockets.connect(uri) as websocket:
     subscribe = asyncio.create_task(subscriptions(websocket, 'BTCUSD', 300))
     await subscribe
-      # await asyncio.gather(getKline(300,'BTCUSD', websocket), getOrderbook2('BTCUSD', websocket))
-      # await asyncio.gather(getKline(300,'BTCUSD', websocket, queue), getOrderbook2('BTCUSD',websocket,queue))
-      # task1 = asyncio.create_task(getKline(300,'BTCUSD', websocket))
-    # task2 = asyncio.create_task(getOrderbook2('BTCUSD',websocket, 300))
-    # await task1
-    # await task2
-
-
-
-
   return
-  # async with websockets.connect("ws://localhost:8000/wserver")) as ping:
-  #   ping.onmessage = (data) 
-  # await retrieval
 
 if __name__=="__main__":
   asyncio.run(main())
-  # app.run(debug=True)
-  # print('hello')
-  # asyncio.run(main())

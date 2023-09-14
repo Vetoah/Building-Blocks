@@ -10,7 +10,6 @@ class TickerConsumer(WebsocketConsumer):
       self.group_name,
       self.channel_name
     )
-    
 
     self.send(text_data = json.dumps({
       'type': 'connection_established',
@@ -36,7 +35,6 @@ class TickerConsumer(WebsocketConsumer):
         'message': message
       }
     )
-
   
   def new_candle(self, event):
     message = event['message']

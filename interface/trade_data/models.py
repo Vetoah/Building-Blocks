@@ -4,8 +4,6 @@ from asgiref.sync import async_to_sync
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-# Create your models here.
-
 class TradeModel(models.Model):
   timestamp = models.CharField(max_length = 200)
   side = models.CharField(max_length = 200)
@@ -25,9 +23,7 @@ def ticker_model_post_save(sender, instance, created, *args, **kwargs):
   channel_layer = get_channel_layer()
   group_name = "lobby"
   instance_values = [str(value) for fields, value in list(instance.__dict__.items())[2:]]
-  print(instance_values)
   if created:
-
     async_to_sync(channel_layer.group_send)(
       group_name,
       {
@@ -43,7 +39,6 @@ def ticker_model_post_save(sender, instance, created, *args, **kwargs):
         'message': instance_values
       }
     )
-    
 
 class KlineTickerModel(models.Model):
   timestamp = models.CharField(max_length = 200)
@@ -81,12 +76,10 @@ class OrderbookModel(models.Model):
   quantity = models.CharField(max_length = 200)
   side = models.CharField(max_length = 200)
 
-
 @receiver(post_save, sender=OrderbookModel)
 def order_model_post_save(sender, instance, created, *args, **kwargs):
   instances = OrderbookModel.objects.filter(quantity=0)
   instances.delete()
-  print('deleted')
  
   
 
