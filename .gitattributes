@@ -2,4 +2,4 @@
 *.css linguist-detectable=true
 *.js linguist-detectable=true
 *.py linguist-detectable=true
-.venv/* linguist-vendored
+.venv/** linguist-vendored
