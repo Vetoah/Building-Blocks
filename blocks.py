@@ -7,6 +7,7 @@ import json
 import requests
 import time
 import asyncio
+import math 
 from arch import arch_model
 import websockets
 from arch.__future__ import reindexing
@@ -15,11 +16,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import linregress
 import os.path
 from statsmodels.tsa.stattools import adfuller
-
-# This function fills in 'results.csv' with calculated data that comes from hourly market data.
-# The numpy least squared function does not output required constants to forecast the RV for the next day.
-# The csv is created and read by Excel workbook, data from the workbook is read after calculations are done.
-# The link from the Excel workbook may not automatically update, so I recommend refreshing it to get the latest data from result.csv
+import statsmodels.formula.api as sm
 
 def forecast():
   RESOLUTION = 3600 # 1 hour
@@ -65,38 +62,30 @@ def forecast():
           
           intraday_df.to_csv('intraday.csv', index=False)
           for x in range(len(days_df.days)):
-            # Realized variance is the volitility of the price action over a period of time
             rv_total = intraday_df[intraday_df['day'] == days_df['days'][x]]['return^2'].sum()
             days_df.loc[x, 'realized_variance'] = rv_total
-            # Realized quarticity is the measure of the fourth moment of the distribution of the price action over a period of time
             rq_total = (24/3)*(intraday_df[intraday_df['day'] == days_df['days'][x]]['return^4'].sum())
             days_df.loc[x, 'realized_quarticity'] = rq_total
 
             if(x > 0):
               days_df.loc[x, 'DailyRV'] = days_df['realized_variance'][x-1]
-              days_df['SQRT(RQ(d))*RV(d)'] = (np.sqrt((days_df.realized_quarticity).shift(1)) * days_df.DailyRV)       
+              days_df['DailyMeasure'] = (np.sqrt((days_df.realized_quarticity).shift(1)) * days_df.DailyRV)       
             if(x > 6):
               days_df['WeeklyRV'] = days_df['realized_variance'].rolling(window=7).mean()
-              days_df['SQRT(RQ(w))*RV(w)'] = np.sqrt(days_df.realized_quarticity.rolling(window=7).sum( ))  * days_df.realized_variance.rolling(window=7).mean()
+              days_df['WeeklyMeasure'] = np.sqrt(days_df.realized_quarticity.rolling(window=7).sum( ))  * days_df.realized_variance.rolling(window=7).mean()
             if(x > 30):
               days_df['MonthlyRV'] = days_df['realized_variance'].rolling(window=30).mean()
-              days_df['SQRT(RQ(m))*RV(m)'] = np.sqrt(days_df.realized_quarticity.rolling(window=30).sum() )  * days_df.realized_variance.rolling(window=30).mean()
+              days_df['MonthlyMeasure'] = np.sqrt(days_df.realized_quarticity.rolling(window=30).sum() )  * days_df.realized_variance.rolling(window=30).mean()
 
-      days_df = days_df.reindex(columns=['days', 'realized_variance', 'realized_quarticity','DailyRV','WeeklyRV','MonthlyRV','SQRT(RQ(d))*RV(d)','SQRT(RQ(w))*RV(w)','SQRT(RQ(m))*RV(m)'])
-
+      days_df = days_df.reindex(columns=['days', 'realized_variance', 'realized_quarticity','DailyRV','WeeklyRV','MonthlyRV','DailyMeasure','WeeklyMeasure','MonthlyMeasure'])
+      result = sm.ols(formula="realized_variance ~ DailyRV + WeeklyRV + MonthlyRV + DailyMeasure + WeeklyMeasure + MonthlyMeasure", data=days_df[30:]).fit()
+      results_df = pd.DataFrame({"coefs":result.params, "se":result.bse})
+      last_row = days_df.tail(1)
       
-      filename = 'result_data.csv'
-      # In the Excel Workbook, formula ranges must be dynamic, otherwise, the values will never change because the latest row will not be included.
-      if os.path.isfile(filename):
-        old_data = pd.read_csv(filename)
-        new_data = days_df[days_df.isin(old_data)].dropna()
-        # print(new_data)
-        days_df.to_csv('result_data.csv', index=False)
-      else:
-        days_df.to_csv('result_data.csv', index=False)
-      
-      dfs = pd.read_excel('CalculationForHARQ.xlsx', sheet_name="Calculation")
-      print("Volatility forecast: %.2f" % dfs['Predicted Volitility'][0],"%")
+      predicted_rv = results_df['coefs'][0] + last_row['DailyRV'].values[0] * results_df['coefs'][1] + last_row['WeeklyRV'].values[0] * results_df['coefs'][2] + last_row['MonthlyRV'].values[0] * results_df['coefs'][3] + last_row['DailyMeasure'].values[0] * results_df['coefs'][4] + last_row['WeeklyMeasure'].values[0] * results_df['coefs'][5] + last_row['MonthlyMeasure'].values[0] * results_df['coefs'][6]
+      predicted_volatility = math.sqrt(predicted_rv)
+      print(f'Daily predicted volatility: {round(predicted_volatility, 2)}%')
+      return predicted_volatility
   else:
       print('Request failed with status code:', response.status_code)
 
