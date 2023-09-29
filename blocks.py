@@ -1,5 +1,4 @@
 import pandas as pd
-import yfinance as yf
 import hmac
 import hashlib
 import time
@@ -21,73 +20,65 @@ import statsmodels.formula.api as sm
 def forecast():
   RESOLUTION = 3600 # 1 hour
   COIN = "BTC"
+  joined = []
+  iterations = 4
+  success = [0]
   now = int(time.time())
 
   # number of klines should be less than 1000 according to phemex API github
-  first = f"https://api.phemex.com/exchange/public/md/kline?symbol={COIN}USD&to={now}&from={now - (RESOLUTION * 999)}&resolution={RESOLUTION}"
-  first_response = requests.get(first)
+  for i in range(iterations - 1, -1, -1):
+    get_data = f"https://api.phemex.com/exchange/public/md/kline?symbol={COIN}USD&to={now - ((RESOLUTION * 999) * i)}&from={now - ((RESOLUTION * 999) * (i + 1))}&resolution={RESOLUTION}"
+    first_response = requests.get(get_data)
+    if first_response.status_code == 200:
+      data = first_response.json()
+      joined += data['data']['rows']
+      success[0] += 1 
+      time.sleep(1)
 
-  second = f"https://api.phemex.com/exchange/public/md/kline?symbol={COIN}USD&to={now - (RESOLUTION * 999)}&from={now - ((RESOLUTION * 999) * 2)}&resolution={RESOLUTION}"
-  second_response = requests.get(second)
 
-  third = f"https://api.phemex.com/exchange/public/md/kline?symbol={COIN}USD&to={now - ((RESOLUTION * 999) * 2)}&from={now - ((RESOLUTION * 999) * 3)}&resolution={RESOLUTION}"
-  third_response = requests.get(third)
+  if success[0] == iterations:
+    json_data = json.loads(str(joined))
+    
+    # Scraping data from the hourly and seperating them by the day
+    intraday_df = pd.DataFrame(json_data , columns=['timestamp', 'interval', 'last_close','open','high','low','close','volume','turnover'])
+    intraday_df['last_close']=intraday_df['last_close']/10000
+    intraday_df['close']=intraday_df['close']/10000
+    intraday_df = intraday_df.drop(columns=['open', 'high','low', 'interval','volume','turnover'])  
+    intraday_df.insert(3, 'return_percentage',(intraday_df["close"] / intraday_df['last_close']) * 100 - 100)
+    intraday_df.insert(4, 'return^2',(intraday_df["return_percentage"]**2))
+    intraday_df.insert(5, 'return^4',(intraday_df["return_percentage"]**4))
+    intraday_df.insert(6, 'day', pd.to_datetime(intraday_df['timestamp'], unit="s").dt.date)
+    adf_result1 = adfuller(intraday_df['last_close'])
+    days_df = pd.DataFrame(intraday_df.day.unique(), columns=['days'])
 
-  fourth = f"https://api.phemex.com/exchange/public/md/kline?symbol={COIN}USD&to={now - ((RESOLUTION * 999) * 3)}&from={now - ((RESOLUTION * 999) * 4)}&resolution={RESOLUTION}"
-  fourth_response = requests.get(fourth)
+    for x in range(len(days_df.days)):
+      rv_total = intraday_df[intraday_df['day'] == days_df['days'][x]]['return^2'].sum()
+      days_df.loc[x, 'realized_variance'] = rv_total
+      rq_total = (24/3)*(intraday_df[intraday_df['day'] == days_df['days'][x]]['return^4'].sum())
+      days_df.loc[x, 'realized_quarticity'] = rq_total
 
-  if first_response.status_code == 200 & second_response.status_code == 200:
-    if second_response.status_code == 200:
-      if third_response.status_code == 200:
-        if fourth_response.status_code == 200:
-          data = first_response.json()
-          data2 = second_response.json()
-          data3 = third_response.json()
-          data4 = fourth_response.json()
+      if(x > 0):
+        days_df.loc[x, 'DailyRV'] = days_df['realized_variance'][x-1]
+        days_df['DailyMeasure'] = (np.sqrt((days_df.realized_quarticity).shift(1)) * days_df.DailyRV)       
+      if(x > 6):
+        days_df['WeeklyRV'] = days_df['realized_variance'].rolling(window=7).mean()
+        days_df['WeeklyMeasure'] = np.sqrt(days_df.realized_quarticity.rolling(window=7).sum())  * days_df.realized_variance.rolling(window=7).mean()
+      if(x > 30):
+        days_df['MonthlyRV'] = days_df['realized_variance'].rolling(window=30).mean()
+        days_df['MonthlyMeasure'] = np.sqrt(days_df.realized_quarticity.rolling(window=30).sum() )  * days_df.realized_variance.rolling(window=30).mean()
 
-          load_json = str(data4['data']['rows'])[:-1] + "," + str(data3['data']['rows'])[1:-1] + "," + str(data2['data']['rows'])[1:-1] + "," + str(data['data']['rows'])[1:]
-          json_data = json.loads(load_json)
-          
-          # Scraping data from the hourly and seperating them by the day
-          intraday_df = pd.DataFrame(json_data , columns=['timestamp', 'interval', 'last_close','open','high','low','close','volume','turnover'])
-          intraday_df['last_close']=intraday_df['last_close']/10000
-          intraday_df['close']=intraday_df['close']/10000
-          intraday_df = intraday_df.drop(columns=['open', 'high','low', 'interval','volume','turnover'])  
-          intraday_df.insert(3, 'return_percentage',(intraday_df["close"] / intraday_df['last_close']) * 100 - 100)
-          intraday_df.insert(4, 'return^2',(intraday_df["return_percentage"]**2))
-          intraday_df.insert(5, 'return^4',(intraday_df["return_percentage"]**4))
-          intraday_df.insert(6, 'day', pd.to_datetime(intraday_df['timestamp'], unit="s").dt.date)
-          adf_result1 = adfuller(intraday_df['last_close'])
-          days_df = pd.DataFrame(intraday_df.day.unique(), columns=['days'])
-          
-          intraday_df.to_csv('intraday.csv', index=False)
-          for x in range(len(days_df.days)):
-            rv_total = intraday_df[intraday_df['day'] == days_df['days'][x]]['return^2'].sum()
-            days_df.loc[x, 'realized_variance'] = rv_total
-            rq_total = (24/3)*(intraday_df[intraday_df['day'] == days_df['days'][x]]['return^4'].sum())
-            days_df.loc[x, 'realized_quarticity'] = rq_total
-
-            if(x > 0):
-              days_df.loc[x, 'DailyRV'] = days_df['realized_variance'][x-1]
-              days_df['DailyMeasure'] = (np.sqrt((days_df.realized_quarticity).shift(1)) * days_df.DailyRV)       
-            if(x > 6):
-              days_df['WeeklyRV'] = days_df['realized_variance'].rolling(window=7).mean()
-              days_df['WeeklyMeasure'] = np.sqrt(days_df.realized_quarticity.rolling(window=7).sum( ))  * days_df.realized_variance.rolling(window=7).mean()
-            if(x > 30):
-              days_df['MonthlyRV'] = days_df['realized_variance'].rolling(window=30).mean()
-              days_df['MonthlyMeasure'] = np.sqrt(days_df.realized_quarticity.rolling(window=30).sum() )  * days_df.realized_variance.rolling(window=30).mean()
-
-      days_df = days_df.reindex(columns=['days', 'realized_variance', 'realized_quarticity','DailyRV','WeeklyRV','MonthlyRV','DailyMeasure','WeeklyMeasure','MonthlyMeasure'])
-      result = sm.ols(formula="realized_variance ~ DailyRV + WeeklyRV + MonthlyRV + DailyMeasure + WeeklyMeasure + MonthlyMeasure", data=days_df[30:]).fit()
-      results_df = pd.DataFrame({"coefs":result.params, "se":result.bse})
-      last_row = days_df.tail(1)
-      
-      predicted_rv = results_df['coefs'][0] + last_row['DailyRV'].values[0] * results_df['coefs'][1] + last_row['WeeklyRV'].values[0] * results_df['coefs'][2] + last_row['MonthlyRV'].values[0] * results_df['coefs'][3] + last_row['DailyMeasure'].values[0] * results_df['coefs'][4] + last_row['WeeklyMeasure'].values[0] * results_df['coefs'][5] + last_row['MonthlyMeasure'].values[0] * results_df['coefs'][6]
-      predicted_volatility = math.sqrt(predicted_rv)
-      print(f'Daily predicted volatility: {round(predicted_volatility, 2)}%')
-      return predicted_volatility
+    days_df = days_df.reindex(columns=['days', 'realized_variance', 'realized_quarticity','DailyRV','WeeklyRV','MonthlyRV','DailyMeasure','WeeklyMeasure','MonthlyMeasure'])
+    days_df.to_csv('days.csv', index=False)
+    result = sm.ols(formula="realized_variance ~ DailyRV + WeeklyRV + MonthlyRV + DailyMeasure + WeeklyMeasure + MonthlyMeasure", data=days_df[30:]).fit()
+    results_df = pd.DataFrame({"coefs":result.params, "se":result.bse})
+    last_row = days_df.tail(1)
+    
+    predicted_rv = results_df['coefs'][0] + last_row['DailyRV'].values[0] * results_df['coefs'][1] + last_row['WeeklyRV'].values[0] * results_df['coefs'][2] + last_row['MonthlyRV'].values[0] * results_df['coefs'][3] + last_row['DailyMeasure'].values[0] * results_df['coefs'][4] + last_row['WeeklyMeasure'].values[0] * results_df['coefs'][5] + last_row['MonthlyMeasure'].values[0] * results_df['coefs'][6]
+    predicted_volatility = math.sqrt(predicted_rv)
+    print(f'Daily predicted volatility: {round(predicted_volatility, 2)}%')
+    return predicted_volatility
   else:
-      print('Request failed with status code:', response.status_code)
+      print('incorrect number of iterations')
 
 
 async def volume_delta(uri):
